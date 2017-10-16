@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 
-from fft.fft import FFT, FFT_vectorized
+from fft.fft import FFT, FFT_vectorized, FFT_shift
 
 cap = cv2.VideoCapture('/Users/natinavas/Documents/ITBA/MNA/photoplesthysmography/xid-120473_1.mp4')
 
@@ -49,9 +49,9 @@ r = r[0,0:n]-np.mean(r[0,0:n])
 g = g[0,0:n]-np.mean(g[0,0:n])
 b = b[0,0:n]-np.mean(b[0,0:n])
 
-R = np.abs(np.fft.fftshift(FFT_vectorized(r)))**2
-G = np.abs(np.fft.fftshift(FFT_vectorized(g)))**2
-B = np.abs(np.fft.fftshift(FFT_vectorized(b)))**2
+R = np.abs(FFT_shift(FFT_vectorized(r)))**2
+G = np.abs(FFT_shift(FFT_vectorized(g)))**2
+B = np.abs(FFT_shift(FFT_vectorized(b)))**2
 
 plt.plot(60*f,R)
 plt.xlim(0,200)

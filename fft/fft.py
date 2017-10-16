@@ -1,6 +1,5 @@
 import numpy as np
 
-
 def FFT(x):
     """A recursive implementation of the 1D Cooley-Tukey FFT"""
     x = np.asarray(x, dtype=float)
@@ -46,3 +45,13 @@ def FFT_vectorized(x):
 
     return X.ravel()
 
+
+def FFT_shift(x):
+    """ X is an array with a pair length """
+
+    for i in range(int(len(x)/2)):
+        aux = x[i]
+        x[i] = x[int(len(x)/2) + i]
+        x[int(len(x)/2) + i]= aux
+
+    return x
