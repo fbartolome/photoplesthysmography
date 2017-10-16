@@ -1,7 +1,5 @@
 #https://jakevdp.github.io/blog/2013/08/28/understanding-the-fft/
-
 import numpy as np
-
 
 def DFT_slow(x):
     """Compute the discrete Fourier Transform of the 1D array x"""
@@ -26,8 +24,8 @@ def FFT(x):
         X_even = FFT(x[::2])
         X_odd = FFT(x[1::2])
         factor = np.exp(-2j * np.pi * np.arange(N) / N)
-        return np.concatenate([X_even + factor[:N / 2] * X_odd,
-                               X_even + factor[N / 2:] * X_odd])
+        return np.concatenate([X_even + factor[: (int(N/2))] * X_odd,
+                               X_even + factor[(int(N/2)) :] * X_odd])
 
 
 def FFT_vectorized(x):
@@ -50,8 +48,8 @@ def FFT_vectorized(x):
 
     # build-up each level of the recursive calculation all at once
     while X.shape[0] < N:
-        X_even = X[:, :X.shape[1] / 2]
-        X_odd = X[:, X.shape[1] / 2:]
+        X_even = X[:, :(int(X.shape[1] / 2))]
+        X_odd = X[:, (int(X.shape[1] / 2)):]
         factor = np.exp(-1j * np.pi * np.arange(X.shape[0])
                         / X.shape[0])[:, None]
         X = np.vstack([X_even + factor * X_odd,
@@ -60,5 +58,4 @@ def FFT_vectorized(x):
     return X.ravel()
 
 x = np.random.random(1024)
-print(np.allclose(FFT(x), np.fft.fft(x)))
-
+print(np.allclose(FFT_vectorized(x), np.fft.fft(x)))
