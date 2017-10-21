@@ -6,12 +6,22 @@ Created on Sat Sep 16 19:23:10 2017
 """
 
 import numpy as np
+import argparse
+
 import matplotlib.pyplot as plt
 import cv2
 
 from fft.fft import FFT, FFT_vectorized, FFT_shift
 
-cap = cv2.VideoCapture('/Users/natinavas/Documents/ITBA/MNA/photoplesthysmography/xid-120473_1.mp4')
+
+parser = argparse.ArgumentParser(description="Photoplesthysmography")
+parser.add_argument("--file", "-f", type=str, dest='file', default='/Users/natinavas/Documents/ITBA/MNA/photoplesthysmography/xid-120473_1.mp4')
+
+args = parser.parse_args()
+
+cap = cv2.VideoCapture(args.file)
+
+
 
 #if not cap.isOpened(): 
 #    print("No lo pude abrir")
@@ -49,18 +59,21 @@ r = r[0,0:n]-np.mean(r[0,0:n])
 g = g[0,0:n]-np.mean(g[0,0:n])
 b = b[0,0:n]-np.mean(b[0,0:n])
 
-R = np.abs(FFT_shift(FFT_vectorized(r)))**2
-G = np.abs(FFT_shift(FFT_vectorized(g)))**2
-B = np.abs(FFT_shift(FFT_vectorized(b)))**2
+R = np.abs(FFT_shift(np.fft.fft(r)))**2
+G = np.abs(FFT_shift(np.fft.fft(g)))**2
+B = np.abs(FFT_shift(np.fft.fft(b)))**2
 
-plt.plot(60*f,R)
-plt.xlim(0,200)
+# plt.plot(60*f,R)
+# plt.xlim(0,200)
+#
+# plt.plot(60*f,G)
+# plt.xlim(0,200)
+# plt.xlabel("frecuencia [1/minuto]")
+#
+# plt.plot(60*f,B)
+# plt.xlim(0,200)
 
-plt.plot(60*f,G)
-plt.xlim(0,200)
-plt.xlabel("frecuencia [1/minuto]")
-
-plt.plot(60*f,B)
-plt.xlim(0,200)
-
+##Obtuvimos que el rojo es el peor color
+print("Frecuencia cardíaca: ", abs(f[np.argmax(R)])*60, " pulsaciones por minuto")
 print("Frecuencia cardíaca: ", abs(f[np.argmax(G)])*60, " pulsaciones por minuto")
+print("Frecuencia cardíaca: ", abs(f[np.argmax(B)])*60, " pulsaciones por minuto")
