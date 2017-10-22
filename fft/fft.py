@@ -1,6 +1,6 @@
 import numpy as np
 
-def FFT(x):
+def FFT_recursive(x):
 
     x = np.asarray(x, dtype=float)
     N = x.shape[0]
@@ -12,14 +12,14 @@ def FFT(x):
         raise ValueError('x should be a power of 2')
 
     else:
-        X_even = FFT(x[::2])
-        X_odd = FFT(x[1::2])
+        X_even = FFT_recursive(x[::2])
+        X_odd = FFT_recursive(x[1::2])
         # TODO factor puede estar precalculado en un mapa
         factor = np.exp(-2j * np.pi * np.arange(N) / N)
         return np.concatenate([X_even + factor[: (int(N/2))] * X_odd,
                                X_even + factor[(int(N/2)) :] * X_odd])
 
-def FFT_vectorized(x):
+def FFT(x):
     x = np.asarray(x, dtype=float)
     N = x.shape[0]
 
