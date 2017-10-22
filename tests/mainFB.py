@@ -42,6 +42,6 @@ r = r[0,0:length]-np.mean(r[0,0:length])
 g = g[0,0:length]-np.mean(g[0,0:length])
 b = b[0,0:length]-np.mean(b[0,0:length])
 
-tests.interval_test(r)
+tests.interval_test(g)
 
 
