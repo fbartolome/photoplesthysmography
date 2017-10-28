@@ -28,7 +28,6 @@ def interval_test(x,fps):
             info[2,i] = np.max(freqs)
             info[3,i] = np.min(freqs)
 
-
     print('-----------')
 
     for i in range(0, len(ns)):
@@ -39,16 +38,15 @@ def interval_test(x,fps):
         print("\tMínimo: ", info[3][i])
         print("\tAmplitud: ", info[2][i]-info[3][i])
 
-
-def time_test(x,window,step,fps):
+def time_test(x,window,step,fps,filename):
     total_frames = len(x)
-    freqs = np.zeros(int((total_frames - window) / step))
 
     for i in range(0,int((total_frames - window) / step)):
         frames = x[i * step:(i * step) + window]
         f = np.linspace(-window / 2, window / 2 - 1, window) * fps / window
         X = np.abs(fft.FFT_shift(np.fft.fft(frames))) ** 2
         freq = abs(f[np.argmax(X)]) * 60
-        print(freq)
-
-
+        print("Tiempo: ",((i * step) + window)/fps,"\tFrecuencia: ",freq)
+        file = open(filename, "w" if i == 0 else "a")
+        file.write("%g,%g\n" % (((i * step) + window)/fps, freq))
+        file.close()
