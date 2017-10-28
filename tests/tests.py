@@ -38,3 +38,17 @@ def interval_test(x,fps):
         print("\tMáximo: ", info[2][i])
         print("\tMínimo: ", info[3][i])
         print("\tAmplitud: ", info[2][i]-info[3][i])
+
+
+def time_test(x,window,step,fps):
+    total_frames = len(x)
+    freqs = np.zeros(int((total_frames - window) / step))
+
+    for i in range(0,int((total_frames - window) / step)):
+        frames = x[i * step:(i * step) + window]
+        f = np.linspace(-window / 2, window / 2 - 1, window) * fps / window
+        X = np.abs(fft.FFT_shift(np.fft.fft(frames))) ** 2
+        freq = abs(f[np.argmax(X)]) * 60
+        print(freq)
+
+
