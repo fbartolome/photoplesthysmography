@@ -51,21 +51,27 @@ cv2.destroyAllWindows()
 n = 1024
 f = np.linspace(-n/2,n/2-1,n)*fps/n
 
+
 r = r[0,0:n]-np.mean(r[0,0:n])
 g = g[0,0:n]-np.mean(g[0,0:n])
 b = b[0,0:n]-np.mean(b[0,0:n])
+
+# Use butter filter
+if args.filter:
+    BPM_lowest = 40
+    BPM_max = 230
+    Wn = [((BPM_lowest/60)/fps * 2), ((BPM_max/60)/fps * 2)]
+    B_butter, A_butter = butter(N=2, Wn=Wn, btype='band')
+    r = filtfilt(B_butter, A_butter, r)
+    g = filtfilt(B_butter, A_butter, g)
+    b = filtfilt(B_butter, A_butter, b)
 
 # Calculate fourier transformations
 R = np.abs(FFT_shift(FFT(r))) ** 2
 G = np.abs(FFT_shift(FFT(g))) ** 2
 B = np.abs(FFT_shift(FFT(b))) ** 2
 
-# Use butter filter
-if args.filter:
-    B_butter, A_butter = butter(2, 0.4)
-    R = filtfilt(B_butter, A_butter, R)
-    G = filtfilt(B_butter, A_butter, G)
-    B = filtfilt(B_butter, A_butter, B)
+
 
 # plt.plot(60*f,R)
 # plt.xlim(0,200)
@@ -76,7 +82,6 @@ if args.filter:
 #
 # plt.plot(60*f,B)
 # plt.xlim(0,200)
-
 
 # Compare using different colors
 print("Frecuencia cardíaca R: ", abs(f[np.argmax(R)])*60, " pulsaciones por minuto")
