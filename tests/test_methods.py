@@ -82,11 +82,11 @@ def subframes_test(file, interval, rows, cols, fft_method, butter_filter = True)
             for j in range(0, cols):
                 if ret == True:
                     if k >= firstFrames:
-                        r[i * cols + j, k - firstFrames] = np.mean(frame[i*subframe_height:(i+1)*subframe_height-1,
+                        b[i * cols + j, k - firstFrames] = np.mean(frame[i*subframe_height:(i+1)*subframe_height-1,
                                                                    j * subframe_width:(j + 1) * subframe_width - 1, 0])
                         g[i * cols + j, k - firstFrames] = np.mean(frame[i*subframe_height:(i+1)*subframe_height-1,
                                                                    j * subframe_width:(j + 1) * subframe_width - 1, 1])
-                        b[i * cols + j, k - firstFrames] = np.mean(frame[i*subframe_height:(i+1)*subframe_height-1,
+                        r[i * cols + j, k - firstFrames] = np.mean(frame[i*subframe_height:(i+1)*subframe_height-1,
                                                                    j * subframe_width:(j + 1) * subframe_width - 1, 2])
 
                 else:
@@ -152,13 +152,13 @@ def size_test(file, interval, fft_method, steps, butter_filter = True):
         for i in range(0,steps):
             if ret == True:
                 if k >= firstFrames:
-                    r[i, k - firstFrames] = np.mean(
+                    b[i, k - firstFrames] = np.mean(
                             frame[int(height/2 - step_height*(i+1)):int(height/2 + step_height*(i+1))-1,
                             int(width/2 - step_width*(i+1)):int(width/2 + step_width*(i+1))-1, 0])
                     g[i, k - firstFrames] = np.mean(
                         frame[int(height / 2 - step_height * (i+1)):int(height / 2 + step_height * (i+1))-1,
                         int(width / 2 - step_width * (i+1)):int(width / 2 + step_width * (i+1))-1, 1])
-                    b[i, k - firstFrames] = np.mean(
+                    r[i, k - firstFrames] = np.mean(
                         frame[int(height / 2 - step_height * (i+1)):int(height / 2 + step_height * (i+1))-1,
                         int(width / 2 - step_width * (i+1)):int(width / 2 + step_width * (i+1))-1, 2])
         k = k + 1
@@ -179,9 +179,10 @@ def size_test(file, interval, fft_method, steps, butter_filter = True):
         BPM_max = 230
         Wn = [((BPM_lowest / 60) / fps * 2), ((BPM_max / 60) / fps * 2)]
         B_butter, A_butter = butter(N=2, Wn=Wn, btype='band')
-        r = filtfilt(B_butter, A_butter, r)
-        g = filtfilt(B_butter, A_butter, g)
-        b = filtfilt(B_butter, A_butter, b)
+        for i in range(0, steps):
+            r[i, 0:interval] = filtfilt(B_butter, A_butter, r[i, 0:interval])
+            g[i, 0:interval] = filtfilt(B_butter, A_butter, g[i, 0:interval])
+            b[i, 0:interval] = filtfilt(B_butter, A_butter, b[i, 0:interval])
 
     for i in range(0,steps):
         f = np.linspace(-interval / 2, interval / 2 - 1, interval) * fps / interval
