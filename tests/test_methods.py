@@ -3,12 +3,10 @@ import numpy as np
 from fft import fft
 from scipy.signal import butter, filtfilt
 
-#TODO CAMBIAR FFT CALL
-
 def interval_test(x,fps):
     total_frames = len(x)
     # amount of interval's frames
-    ns = [512,1024,2048,4096]
+    ns = [2*4096]
     #info is a n dimensional array with avg, std, max, min in first 4
     info = np.zeros((4, len(ns)))
 
@@ -23,7 +21,8 @@ def interval_test(x,fps):
                 f = np.linspace(-n / 2, n / 2 - 1, n) * fps / n
                 X = np.abs(fft.FFT_shift(fft.FFT(frames))) ** 2
                 freq = abs(f[np.argmax(X)]) * 60
-                print("\tFrecuencia cardíaca: ", freq, " pulsaciones por minuto")
+                print(freq)
+                # print("\tFrecuencia cardíaca: ", freq, " pulsaciones por minuto")
                 freqs[j]=freq
 
         if len(freqs)!=0:
@@ -179,10 +178,9 @@ def size_test(file, interval, fft_method, steps, butter_filter = True):
         BPM_max = 230
         Wn = [((BPM_lowest / 60) / fps * 2), ((BPM_max / 60) / fps * 2)]
         B_butter, A_butter = butter(N=2, Wn=Wn, btype='band')
-        for i in range(0, steps):
-            r[i, 0:interval] = filtfilt(B_butter, A_butter, r[i, 0:interval])
-            g[i, 0:interval] = filtfilt(B_butter, A_butter, g[i, 0:interval])
-            b[i, 0:interval] = filtfilt(B_butter, A_butter, b[i, 0:interval])
+        r = filtfilt(B_butter, A_butter, r)
+        g = filtfilt(B_butter, A_butter, g)
+        b = filtfilt(B_butter, A_butter, b)
 
     for i in range(0,steps):
         f = np.linspace(-interval / 2, interval / 2 - 1, interval) * fps / interval
