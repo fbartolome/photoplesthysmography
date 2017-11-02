@@ -21,7 +21,7 @@ def interval_test(x,fps):
                 frames = x[j*n:(j+1)*n]
 
                 f = np.linspace(-n / 2, n / 2 - 1, n) * fps / n
-                X = np.abs(fft.FFT_shift(np.fft.fft(frames))) ** 2
+                X = np.abs(fft.FFT_shift(fft.FFT(frames))) ** 2
                 freq = abs(f[np.argmax(X)]) * 60
                 print("\tFrecuencia cardíaca: ", freq, " pulsaciones por minuto")
                 freqs[j]=freq
@@ -55,34 +55,15 @@ def time_test(x,window,step,fps,filename):
         file.write("%g,%g\n" % (((i * step) + window)/fps, freq))
         file.close()
 
-# def subframe_test(x,height,width,interval,fps, rows, cols):
-#     frames = x[0:interval]
-#
-#     subframe_height = int(height / rows)
-#
-#     subframe_width = int(width / cols)
-#
-#     info = np.zeros((1, len(rows * cols)))
-#
-#     for i in range(0, rows):
-#         for j in range(0, cols):
-#             f = np.linspace(-interval / 2, interval / 2 - 1, interval) * fps / interval
-#             X = np.abs(fft.FFT_shift(np.fft.fft(frames))) ** 2
-#             freq = abs(f[np.argmax(X)]) * 60
-
-
-def subframes_test(file, interval, rows, cols, butter_filter = True):
+def subframes_test(file, interval, rows, cols, fft_method, butter_filter = True):
     cap = cv2.VideoCapture(file)
 
     if not cap.isOpened():
         print("No lo pude abrir")
 
     firstFrames = 50
-    # print(length)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    # print(width)
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    # print(height)
     fps = cap.get(cv2.CAP_PROP_FPS)
 
     r = np.zeros((rows * cols, interval))
@@ -96,16 +77,18 @@ def subframes_test(file, interval, rows, cols, butter_filter = True):
     k = 0
     while (cap.isOpened()):
         ret, frame = cap.read()
-        #print(k)
 
         for i in range(0,rows):
             for j in range(0, cols):
                 if ret == True:
                     if k >= firstFrames:
-                        r[i * cols + j, k - firstFrames] = np.mean(frame[j*subframe_width:(j+1)*subframe_width, i*subframe_height:(i+1)*subframe_height, 0])
-                        g[i * cols + j, k - firstFrames] = np.mean(frame[j*subframe_width:(j+1)*subframe_width, i*subframe_height:(i+1)*subframe_height, 1])
-                        b[i * cols + j, k - firstFrames] = np.mean(frame[j*subframe_width:(j+1)*subframe_width, i*subframe_height:(i+1)*subframe_height, 2])
-                # print(k)
+                        r[i * cols + j, k - firstFrames] = np.mean(frame[i*subframe_height:(i+1)*subframe_height-1,
+                                                                   j * subframe_width:(j + 1) * subframe_width - 1, 0])
+                        g[i * cols + j, k - firstFrames] = np.mean(frame[i*subframe_height:(i+1)*subframe_height-1,
+                                                                   j * subframe_width:(j + 1) * subframe_width - 1, 1])
+                        b[i * cols + j, k - firstFrames] = np.mean(frame[i*subframe_height:(i+1)*subframe_height-1,
+                                                                   j * subframe_width:(j + 1) * subframe_width - 1, 2])
+
                 else:
                     break
 
@@ -132,17 +115,83 @@ def subframes_test(file, interval, rows, cols, butter_filter = True):
         g = filtfilt(B_butter, A_butter, g)
         b = filtfilt(B_butter, A_butter, b)
 
-    fps = 30
-
     for i in range(0, rows):
         for j in range(0, cols):
             f = np.linspace(-interval / 2, interval / 2 - 1, interval) * fps / interval
-            R = np.abs(fft.FFT_shift(np.fft.fft(r[i * cols + j, 0:interval]))) ** 2
-            G = np.abs(fft.FFT_shift(np.fft.fft(g[i * cols + j, 0:interval]))) ** 2
-            B = np.abs(fft.FFT_shift(np.fft.fft(b[i * cols + j, 0:interval]))) ** 2
+            R = np.abs(fft.FFT_shift(fft_method((r[i * cols + j, 0:interval])))) ** 2
+            G = np.abs(fft.FFT_shift(fft_method((g[i * cols + j, 0:interval])))) ** 2
+            B = np.abs(fft.FFT_shift(fft_method((b[i * cols + j, 0:interval])))) ** 2
             freq_R = abs(f[np.argmax(R)]) * 60
             freq_G = abs(f[np.argmax(G)]) * 60
             freq_B = abs(f[np.argmax(B)]) * 60
 
             print("row: ", i, " - col: ", j)
             print("\tR: ", freq_R, "\tG: ", freq_G, "\tB: ", freq_B)
+
+def size_test(file, interval, fft_method, steps, butter_filter = True):
+    cap = cv2.VideoCapture(file)
+
+    if not cap.isOpened():
+        print("No lo pude abrir")
+
+    firstFrames = 50
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    step_width = width / (2 * steps)
+    step_height = height / (2 * steps)
+
+    r = np.zeros((steps, interval))
+    g = np.zeros((steps, interval))
+    b = np.zeros((steps, interval))
+
+    k = 0
+    while (cap.isOpened()):
+        ret, frame = cap.read()
+
+        for i in range(0,steps):
+            if ret == True:
+                if k >= firstFrames:
+                    r[i, k - firstFrames] = np.mean(
+                            frame[int(height/2 - step_height*(i+1)):int(height/2 + step_height*(i+1))-1,
+                            int(width/2 - step_width*(i+1)):int(width/2 + step_width*(i+1))-1, 0])
+                    g[i, k - firstFrames] = np.mean(
+                        frame[int(height / 2 - step_height * (i+1)):int(height / 2 + step_height * (i+1))-1,
+                        int(width / 2 - step_width * (i+1)):int(width / 2 + step_width * (i+1))-1, 1])
+                    b[i, k - firstFrames] = np.mean(
+                        frame[int(height / 2 - step_height * (i+1)):int(height / 2 + step_height * (i+1))-1,
+                        int(width / 2 - step_width * (i+1)):int(width / 2 + step_width * (i+1))-1, 2])
+        k = k + 1
+        if ret == False or k >= interval + firstFrames:
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+    for i in range(0,steps):
+        r[i] = r[i, 0:interval] - np.mean(r[i, 0:interval])
+        g[i] = r[i, 0:interval] - np.mean(g[i, 0:interval])
+        b[i] = r[i, 0:interval] - np.mean(b[i, 0:interval])
+
+    # Use butter filter
+    if butter_filter:
+        BPM_lowest = 40
+        BPM_max = 230
+        Wn = [((BPM_lowest / 60) / fps * 2), ((BPM_max / 60) / fps * 2)]
+        B_butter, A_butter = butter(N=2, Wn=Wn, btype='band')
+        r = filtfilt(B_butter, A_butter, r)
+        g = filtfilt(B_butter, A_butter, g)
+        b = filtfilt(B_butter, A_butter, b)
+
+    for i in range(0,steps):
+        f = np.linspace(-interval / 2, interval / 2 - 1, interval) * fps / interval
+        R = np.abs(fft.FFT_shift(fft_method((r[i, 0:interval])))) ** 2
+        G = np.abs(fft.FFT_shift(fft_method((g[i, 0:interval])))) ** 2
+        B = np.abs(fft.FFT_shift(fft_method((b[i, 0:interval])))) ** 2
+        freq_R = abs(f[np.argmax(R)]) * 60
+        freq_G = abs(f[np.argmax(G)]) * 60
+        freq_B = abs(f[np.argmax(B)]) * 60
+
+        print("Step ",i)
+        print("\tR: ", freq_R, "\tG: ", freq_G, "\tB: ", freq_B)
+
