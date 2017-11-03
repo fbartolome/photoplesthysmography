@@ -1,56 +1,109 @@
 import numpy as np
+import time
 
-def FFT_recursive(x):
 
-    x = np.asarray(x, dtype=float)
+def fft(x, type):
+    start_time = time.time()
+    if type == 'iterative':
+        ret = fft_iterative(x)
+        print("Iterative time ", time.time() - start_time)
+    elif type == 'recursive':
+        ret = fft_recursive(x)
+        print("Recursive time ", time.time() - start_time)
+    elif type == "dft":
+        ret = dft_classic(x)
+        print("Dft time", time.time() - start_time)
+    else:
+        raise Exception("The chosen FFT algorithm type is not a valid one")
+    return ret
+
+
+def fft_recursive_impl(x):
     N = x.shape[0]
 
     if N == 1:
         return x
-
-    if N%2 > 0:
-        raise ValueError('x should be a power of 2')
-
     else:
-        X_even = FFT_recursive(x[::2])
-        X_odd = FFT_recursive(x[1::2])
-        # TODO factor puede estar precalculado en un mapa
-        factor = np.exp(-2j * np.pi * np.arange(N) / N)
-        return np.concatenate([X_even + factor[: (int(N/2))] * X_odd,
-                               X_even + factor[(int(N/2)) :] * X_odd])
+        even = fft_recursive_impl(x[::2])
+        odd = fft_recursive_impl(x[1::2])
+        #Complex coefficients for butterfly calculation
+        W = np.exp(-2j * np.pi * np.arange(N) / N)
 
-def FFT(x):
-    x = np.asarray(x, dtype=float)
-    N = x.shape[0]
+        return np.concatenate([even + W[: (int(N/2))] * odd,
+                               even + W[(int(N/2)) :] * odd])
 
-    if np.log2(N) % 1 > 0:
+
+def fft_recursive(x):
+
+    if np.log2(x.shape[0])%1>0:
         raise ValueError("size of x must be a power of 2")
 
-    # N_min here is equivalent to the stopping condition above,
-    # and should be a power of 2
-    N_min = min(N, 32)
-
-    # Perform an O[N^2] DFT on all length-N_min sub-problems at once
-    n = np.arange(N_min)
-    k = n[:, None]
-    M = np.exp(-2j * np.pi * n * k / N_min)
-    X = np.dot(M, x.reshape((N_min, -1)))
-
-    # build-up each level of the recursive calculation all at once
-    while X.shape[0] < N:
-        X_even = X[:, :(int(X.shape[1] / 2))]
-        X_odd = X[:, (int(X.shape[1] / 2)):]
-        factor = np.exp(-1j * np.pi * np.arange(X.shape[0])
-                        / X.shape[0])[:, None]
-        X = np.vstack([X_even + factor * X_odd,
-                       X_even - factor * X_odd])
-    return X.ravel()
+    return np.around(fft_recursive_impl(x), 8)
 
 
-def FFT_shift(x):
+def fft_shift(x):
     for i in range(int(len(x)/2)):
         aux = x[i]
         x[i] = x[int(len(x)/2) + i]
         x[int(len(x)/2) + i]= aux
 
     return x
+
+
+def fft_iterative(x):
+    x = np.asarray(x, dtype=float)
+    N = x.shape[0]
+    X = np.zeros(N, dtype= np.complex)
+    W = np.zeros(N, dtype=np.complex)
+
+    #If not a power of 2, abort
+    if np.log2(N) % 1 > 0:
+        raise ValueError("size of x must be a power of 2")
+    log2 = int(np.log2(N))
+
+    for i in range(0,N):
+        #index bit reversal
+        X[int('{:0{width}b}'.format(i,width=log2)[::-1], 2)] = x[i]
+        #Calculation of complex coefficients
+        W[i] = np.exp(-2j * np.pi * i / N)
+
+    butterfly_len = 1
+
+    #Butterfly composition from each sub parts
+    for butterfly_index in range(1,log2+1):
+
+        half_len = butterfly_len
+        butterfly_len *= 2
+        #Coefficient jump for current butterflies
+        w_jump = 2**(log2-butterfly_index)
+        #Number of butterflies
+        block_limit = int(N/butterfly_len)
+
+        #For each butterfly
+        for block_count in range(0,block_limit):
+
+            #For the first half of elements of it
+            for i in range(0,half_len):
+
+                #Select the first element of the current butterfly
+                first_butterfly_element = X[ block_count*butterfly_len + i]
+                #Select de complimentary element which will be added
+                second_butterfly_element = X[ block_count*butterfly_len + i + half_len]
+
+                #Calculate the addition of both with the corresponding complex coefficient Wi
+                X[block_count * butterfly_len + i] = first_butterfly_element + W[w_jump * i] * second_butterfly_element
+                #Calculate the second addition using them, whith the other corresponding coefficient Wj
+                X[block_count * butterfly_len + i + half_len] = first_butterfly_element + W[w_jump * (
+                i + half_len)] * second_butterfly_element
+
+    #returns fft
+    return np.around(X,8)
+
+
+def dft_classic(x):
+    x = np.asarray(x, dtype=float)
+    N = x.shape[0]
+    n = np.arange(N)
+    k = n.reshape((N, 1))
+    M = np.exp(-2j * np.pi * k * n / N)
+    return np.dot(M, x)

@@ -3,7 +3,7 @@ import numpy as np
 from fft import fft
 from scipy.signal import butter, filtfilt
 
-def interval_test(x,fps):
+def interval_test(x,fps,fft_method):
     total_frames = len(x)
     # amount of interval's frames
     ns = [2*4096]
@@ -19,7 +19,7 @@ def interval_test(x,fps):
                 frames = x[j*n:(j+1)*n]
 
                 f = np.linspace(-n / 2, n / 2 - 1, n) * fps / n
-                X = np.abs(fft.FFT_shift(fft.FFT(frames))) ** 2
+                X = np.abs(fft.fft_shift(fft_method(frames))) ** 2
                 freq = abs(f[np.argmax(X)]) * 60
                 print(freq)
                 # print("\tFrecuencia cardíaca: ", freq, " pulsaciones por minuto")
@@ -41,18 +41,17 @@ def interval_test(x,fps):
         print("\tMínimo: ", info[3][i])
         print("\tAmplitud: ", info[2][i]-info[3][i])
 
-def time_test(x,window,step,fps,filename):
+
+def time_test(x,window,step,fps,fft_method):
     total_frames = len(x)
 
     for i in range(0,int((total_frames - window) / step)):
         frames = x[i * step:(i * step) + window]
         f = np.linspace(-window / 2, window / 2 - 1, window) * fps / window
-        X = np.abs(fft.FFT_shift(np.fft.fft(frames))) ** 2
+        X = np.abs(fft.fft_shift(fft_method(frames))) ** 2
         freq = abs(f[np.argmax(X)]) * 60
         print("Tiempo: ",((i * step) + window)/fps,"\tFrecuencia: ",freq)
-        file = open(filename, "w" if i == 0 else "a")
-        file.write("%g,%g\n" % (((i * step) + window)/fps, freq))
-        file.close()
+
 
 def subframes_test(file, interval, rows, cols, fft_method, butter_filter = True):
     cap = cv2.VideoCapture(file)
@@ -117,9 +116,9 @@ def subframes_test(file, interval, rows, cols, fft_method, butter_filter = True)
     for i in range(0, rows):
         for j in range(0, cols):
             f = np.linspace(-interval / 2, interval / 2 - 1, interval) * fps / interval
-            R = np.abs(fft.FFT_shift(fft_method((r[i * cols + j, 0:interval])))) ** 2
-            G = np.abs(fft.FFT_shift(fft_method((g[i * cols + j, 0:interval])))) ** 2
-            B = np.abs(fft.FFT_shift(fft_method((b[i * cols + j, 0:interval])))) ** 2
+            R = np.abs(fft.fft_shift(fft_method((r[i * cols + j, 0:interval])))) ** 2
+            G = np.abs(fft.fft_shift(fft_method((g[i * cols + j, 0:interval])))) ** 2
+            B = np.abs(fft.fft_shift(fft_method((b[i * cols + j, 0:interval])))) ** 2
             freq_R = abs(f[np.argmax(R)]) * 60
             freq_G = abs(f[np.argmax(G)]) * 60
             freq_B = abs(f[np.argmax(B)]) * 60
@@ -184,9 +183,9 @@ def size_test(file, interval, fft_method, steps, butter_filter = True):
 
     for i in range(0,steps):
         f = np.linspace(-interval / 2, interval / 2 - 1, interval) * fps / interval
-        R = np.abs(fft.FFT_shift(fft_method((r[i, 0:interval])))) ** 2
-        G = np.abs(fft.FFT_shift(fft_method((g[i, 0:interval])))) ** 2
-        B = np.abs(fft.FFT_shift(fft_method((b[i, 0:interval])))) ** 2
+        R = np.abs(fft.fft_shift(fft_method((r[i, 0:interval])))) ** 2
+        G = np.abs(fft.fft_shift(fft_method((g[i, 0:interval])))) ** 2
+        B = np.abs(fft.fft_shift(fft_method((b[i, 0:interval])))) ** 2
         freq_R = abs(f[np.argmax(R)]) * 60
         freq_G = abs(f[np.argmax(G)]) * 60
         freq_B = abs(f[np.argmax(B)]) * 60
